@@ -1,0 +1,42 @@
+*
+{
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body
+{
+    overflow: hidden;
+}
+
+.webgl
+{
+    position: fixed;
+    top: 0;
+    left: 0;
+    outline: none;
+}
+
+#musicBtn, #biomeBtn{
+    width:64px;
+    height:64px;
+    filter: grayscale(100%);
+    transition: 0.5s ease;
+}
+
+#musicBtn:hover, #biomeBtn:hover{
+    filter: grayscale(0%);
+    scale: 1.1;
+    cursor: pointer;
+}
+
+#buttonGroup{
+    display: flex;
+    position:absolute;
+    top:10px;
+    left:10px;
+    gap: 10px;
+    flex-direction: column;
+}
+
