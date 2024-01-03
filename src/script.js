@@ -11,18 +11,24 @@ import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer.j
 import {SMAAPass} from 'three/examples/jsm/postprocessing/SMAAPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import Stats from 'stats.js'
+import { removeAll } from '@tweenjs/tween.js'
+
+const stats = new Stats()
+stats.showPanel(0)
+document.body.appendChild(stats.dom)
 
 const params = {
     // general scene params
     blobColor: 0xffffff,
-    blobNumber: 10000,
+    blobNumber: 1000,
     blobInitialPosMultiplier: 10,
     lerpFactor: 0.2, // this param controls the speed of which the blobs move, also affects the eventual moving patterns of the blobs
     followMouse: false,
   }
 
 let height = 4.0
-let scale = 0.3
+let scale = 0.5
 let speed = 6.0
 /**
  * Base
@@ -192,7 +198,7 @@ const generateStars = () => {
     })
 
     // Points
-    const particles = new THREE.Points(particlesGeometry, particlesMaterial)
+    particles = new THREE.Points(particlesGeometry, particlesMaterial)
     scene.add(particles)
 }
 
@@ -227,16 +233,16 @@ gui.add(unrealBloomPass, 'threshold').min(-1).max(1).step(0.001).name('Bloom thr
 
 let mixer = null
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.2)
 scene.add(ambientLight)
 
-let pointLight = new THREE.PointLight(0xffffff, 1, 100)
-pointLight.position.set(0, 4, 10)
-pointLight.color = new THREE.Color("#79f89f")
-scene.add(pointLight)
+let dirLight = new THREE.DirectionalLight(0xffffff, 0, 100)
+dirLight.position.set(0, 4, 10)
+dirLight.color = new THREE.Color("#79f89f")
+scene.add(dirLight)
+scene.add( dirLight.target )
 
-let pointLightHelper = new THREE.PointLightHelper(pointLight, 1)
-scene.add(pointLightHelper)
+
 
 gltfLoader.load('./train.glb', function(gltf){
     gltf.scene.position.set(0, 0.2, 15)
@@ -248,34 +254,20 @@ gltfLoader.load('./train.glb', function(gltf){
 
     const train = gltf.scene
     scene.add(train)
+    dirLight.target = train
 }
 )
 
 let smokeGeometry = new THREE.SphereGeometry(0.3, 24, 24)
-let smokeMaterial = new THREE.MeshStandardMaterial({
+let smokeMaterial = new THREE.MeshLambertMaterial({
     color: params.blobColor,
     metallic: 0.0,
     roughness: 0.61,
     })
 
 let world = new THREE.Object3D();
-for (let i = 0; i < params.blobNumber; i++) {
-    let blob = new THREE.Mesh(smokeGeometry, smokeMaterial)
+generateWorld(world)
 
-    blob.position.x = 0 
-    blob.position.z = 0
-    blob.position.y = 2.3
-    let blob_scale = Math.random()
-    blob.scale.set(blob_scale, blob_scale, blob_scale)
-    if (i == 0) {
-    // first blob acts as the movement guide of all subsequent blobs and it has a regular circular path
-    // better to make it invisible because it's movement does not look random
-    blob.visible = false
-    }
-
-    world.add(blob)
-}
-world.position.set(0, 0, 15)
 scene.add(world)
 
 
@@ -285,12 +277,14 @@ scene.add(world)
 
 const clock = new THREE.Clock()
 
+let particles = ""
 generateStars()
 let previousTime = 0
 
 
 const tick = () =>
 {
+    stats.begin()
     const elapsedTime = clock.getElapsedTime()
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
@@ -315,6 +309,13 @@ const tick = () =>
     controls.update()
 
     let first_obj = world.children[0]
+    let last_obj = world.children[world.children.length - 1]
+    console.log(world.children.length)
+    if(last_obj.position.z > 15){
+        for(let i = 0; i < world.children.length; i++){
+            world.children[i].position.z = 0
+        }
+    }
 
     let offset = {
       x: params.followMouse ? mouseWorldSpace.x : 0,
@@ -331,6 +332,7 @@ const tick = () =>
     for (let i = 0, l = world.children.length; i < l; i++) {
       let object = world.children[i]
       let object_left = world.children[i - 1]
+
       if (i >= 1) {
         // position of each blob is calculated by the cos/sin function of its previous blob's slightly scaled up position
         // such that each blob is has x, y and z coordinates inside -1 and 1, while a pseudo-randomness of positions is achieved
@@ -365,10 +367,12 @@ const tick = () =>
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
+    stats.end()
 }
 
 
 tick()
+console.log(renderer.info)
 
 
 const musicBtn = document.querySelector('#musicBtn')
@@ -407,6 +411,7 @@ function onBiomeClick(){
         unrealBloomPass.enabled = false
         unrealBloomPass.threshold = -1.0
         mesh.position.set(0, 0, -90)
+        dirLight.color = new THREE.Color("#950000")
         return
     }
     else if(material.uniforms.uBiome.value == 3.0)
@@ -420,6 +425,7 @@ function onBiomeClick(){
         unrealBloomPass.enabled = false
         unrealBloomPass.threshold = -1.0
         mesh.position.set(0, 0, -90)
+        dirLight.color = new THREE.Color("#fbb6b9")
         return
     }
     else if(material.uniforms.uBiome.value == 2.0)
@@ -434,7 +440,8 @@ function onBiomeClick(){
         unrealBloomPass.threshold = -1.0
         mesh.position.set(0, 0, -90)
         sphere.geometry = spherePlaneGeometry
-        pointLight.intensity = 1
+        dirLight.intensity = 1
+        dirLight.color = new THREE.Color("#79f89f")
 
         return
     }
@@ -448,8 +455,9 @@ function onBiomeClick(){
         speed = 4.0
         unrealBloomPass.enabled = true
         unrealBloomPass.threshold = -1.0
+        sphere.geometry = sphereGeometry
         mesh.position.set(0, 0, -90)
-        pointLight.intensity = 0
+        dirLight.intensity = 0
 
 
         return
@@ -464,7 +472,10 @@ function onBiomeClick(){
         speed = 2.5
         unrealBloomPass.enabled = false
         mesh.position.set(0, 0, -10)
-        pointLight.intensity = 1
+        dirLight.intensity = 1
+        sphere.geometry = spherePlaneGeometry
+
+        dirLight.color = new THREE.Color("#E24E1B")
 
         return
     }
@@ -480,7 +491,7 @@ function onBiomeClick(){
         unrealBloomPass.threshold = -1.0
         mesh.position.set(0, 0, -10)
         sphere.geometry = sphereGeometry
-        pointLight.intensity = 0
+        dirLight.intensity = 0
         
         return
     }
@@ -500,5 +511,29 @@ window.addEventListener('resize', () =>
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+    //Update stars
+    scene.remove(particles)
+    generateStars()
+
+
     effectComposer.setSize(sizes.width, sizes.height)
 })
+
+function generateWorld(world){
+    for (let i = 0; i < params.blobNumber; i++) {
+        let blob = new THREE.Mesh(smokeGeometry, smokeMaterial)
+    
+        blob.position.x = 0 
+        blob.position.z = 0
+        blob.position.y = 2.3
+        let blob_scale = Math.random() + 0.3
+        blob.scale.set(blob_scale, blob_scale, blob_scale)
+        if(i == 0){
+            blob.visible = false
+        }
+    
+    
+        world.add(blob)
+    }
+    world.position.set(0, 0, 15)
+}

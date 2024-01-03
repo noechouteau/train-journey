@@ -200,13 +200,26 @@ void main()
   
   vec3 newPosition = vec3(position.x, position.y, 0.);
 
-  if(position.x > 1.25 || position.x < -1.25) {
+  if(uBiome == 2.){
+    if(position.x > 4.25 || position.x < -4.25 ){
 
-    float displacement = futureDisplacement;
+      float displacement = futureDisplacement;
 
-    newPosition.z = displacement;
+      newPosition.z = displacement;
 
+    }
   }
+  else{
+    if(position.x > 1.25 || position.x < -1.25  ) {
+
+      float displacement = futureDisplacement;
+
+      newPosition.z = displacement;
+
+    }
+  }
+
+
   
   vec4 modelPosition = modelMatrix * vec4(newPosition, 1.0);
   vec4 viewPosition = viewMatrix * modelPosition;

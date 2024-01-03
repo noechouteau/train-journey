@@ -23,7 +23,23 @@ void main()
         color = vec4 (vUv.y/3.2,0.0,1.,1.);
     }
     else if(uBiome == 1.0){
-        color = vec4 (vUv.y,0.0,0.7,1.0);
+                float d = length(vUv-0.5) - 0.25; // signed distance value
+        bool outside = d > 0.; // true if outside
+
+        vec4 col = vec4(step(0.0, -d));
+
+        float glow = 0.07/d; // create glow and diminish it with distance
+        glow = clamp(glow, 0., 1.); // remove artifacts
+
+        col += glow; // add glow
+
+        vec3 downColor = vec3 (0.992,0.82,0.806);//vec3 (0.992,0.82,0.806);
+        vec3 upColor = vec3 (0.976,0.549,0.604);//vec3 (0.976,0.549,0.604);
+        vec4 mixed = vec4 (mix(downColor, upColor,vUv.y+0.1),1.0);
+        col*= mixed;
+        if(col.a <= 0.99) col = mix( vec4(0.886,0.306,0.106,1.),mixed,clamp(col.a-0.5,0.,1.));
+
+        color = col;
     }
     else if(uBiome == 2.0){
         color = vec4 (0.761,0.075,0.012,1.0);
