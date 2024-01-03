@@ -68,6 +68,7 @@ const sphereGeometry = new THREE.SphereGeometry(45, 32, 32)
 
 // Material
 const material = new THREE.ShaderMaterial({
+    precision: "lowp",
     vertexShader: testVertexShader,
     fragmentShader: testFragmentShader,
     side: THREE.DoubleSide,
