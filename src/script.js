@@ -12,7 +12,10 @@ import {SMAAPass} from 'three/examples/jsm/postprocessing/SMAAPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import Stats from 'stats.js'
-import { removeAll } from '@tweenjs/tween.js'
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { gsap} from 'gsap'
+
 
 const stats = new Stats()
 stats.showPanel(0)
@@ -21,7 +24,7 @@ document.body.appendChild(stats.dom)
 const params = {
     // general scene params
     blobColor: 0xffffff,
-    blobNumber: 1000,
+    blobNumber: 3000,
     blobInitialPosMultiplier: 10,
     lerpFactor: 0.2, // this param controls the speed of which the blobs move, also affects the eventual moving patterns of the blobs
     followMouse: false,
@@ -36,10 +39,31 @@ let speed = 6.0
 // Debug
 const gui = new dat.GUI()
 
+const loadingBarElement = document.querySelector('.loading-bar')
 
-const loader = new THREE.TextureLoader()
+const loadingManager = new THREE.LoadingManager(
+    () =>
+    {
+        console.log('loaded')
+        gsap.delayedCall(0.6, () =>
+        {
+            gsap.to(overlayMaterial.uniforms.uAlpha, { duration: 3, value: 0, delay: 1 })
+            loadingBarElement.classList.add('ended')
+            loadingBarElement.style.transform = ''
+        })
+    },
+    ( itemsUrl, itemsLoaded, itemsTotal) =>
+    {
+        console.log(itemsLoaded, itemsTotal)
+        const progressRatio = itemsLoaded / itemsTotal
+        console.log(progressRatio)
+        loadingBarElement.style.transform = `scaleX(${progressRatio})`
+    }
+)
+
+const loader = new THREE.TextureLoader(loadingManager)
 const audioListener = new THREE.AudioListener()
-const gltfLoader = new GLTFLoader()
+const gltfLoader = new GLTFLoader(loadingManager)
 
 const tex = loader.load('./heightmap.png')
 
@@ -48,6 +72,34 @@ const canvas = document.querySelector('canvas.webgl')
 
 // Scene
 const scene = new THREE.Scene()
+
+/** 
+ * Overlay
+ */
+
+const overlayGeometry = new THREE.PlaneGeometry(2, 2, 1, 1)
+const overlayMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    uniforms: {
+        uAlpha: { value: 1 }
+    },
+    vertexShader: `
+        void main()
+        {
+            gl_Position =  vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform float uAlpha;
+
+        void main()
+        {
+            gl_FragColor = vec4(0.0, 0.0, 0.0, uAlpha);
+        }
+    `,
+})
+const overlay = new THREE.Mesh(overlayGeometry, overlayMaterial)
+scene.add(overlay)
 
 
 scene.background = new THREE.Color(0x0d00b2)
@@ -245,7 +297,13 @@ scene.add( dirLight.target )
 
 
 
-gltfLoader.load('./train.glb', function(gltf){
+const ktx2Loader = new KTX2Loader()
+					.setTranscoderPath( 'jsm/libs/basis/' )
+					.detectSupport( renderer );
+
+gltfLoader.setKTX2Loader( ktx2Loader );
+gltfLoader.setMeshoptDecoder( MeshoptDecoder );
+gltfLoader.load('./train-v1.glb', function(gltf){
     gltf.scene.position.set(0, 0.2, 15)
     gltf.scene.scale.set(0.4, 0.4, 0.4)
 
@@ -266,6 +324,7 @@ let smokeMaterial = new THREE.MeshLambertMaterial({
     roughness: 0.61,
     })
 
+ 
 let world = new THREE.Object3D();
 generateWorld(world)
 
@@ -412,7 +471,8 @@ function onBiomeClick(){
         unrealBloomPass.enabled = false
         unrealBloomPass.threshold = -1.0
         mesh.position.set(0, 0, -90)
-        dirLight.color = new THREE.Color("#950000")
+        dirLight.color = new THREE.Color("#ff0000")
+        smokeMaterial.color.set(0x302222)
         return
     }
     else if(material.uniforms.uBiome.value == 3.0)
@@ -493,7 +553,7 @@ function onBiomeClick(){
         mesh.position.set(0, 0, -10)
         sphere.geometry = sphereGeometry
         dirLight.intensity = 0
-        
+        smokeMaterial.color.set(params.blobColor)
         return
     }
 }
