@@ -18,14 +18,14 @@ import { gsap} from 'gsap'
 
 
 const stats = new Stats()
+const ytApiLink = "https://api-yt.le-gall.info/stream/"
 stats.showPanel(0)
 document.body.appendChild(stats.dom)
 
 const params = {
     // general scene params
     blobColor: 0xffffff,
-    blobNumber: 3000,
-    blobInitialPosMultiplier: 10,
+    blobNumber: 1000,
     lerpFactor: 0.2, // this param controls the speed of which the blobs move, also affects the eventual moving patterns of the blobs
     followMouse: false,
   }
@@ -39,17 +39,22 @@ let speed = 6.0
 // Debug
 const gui = new dat.GUI()
 
-const loadingBarElement = document.querySelector('.loading-bar')
+const btnGroup = document.querySelector('#buttonGroup')
+const loadingBarContainer = document.querySelector('.loading-bar')
+const loadingBarElement = document.querySelector('.progress')
 
 const loadingManager = new THREE.LoadingManager(
     () =>
     {
         console.log('loaded')
-        gsap.delayedCall(0.6, () =>
+        gsap.delayedCall(0.5, () =>
         {
-            gsap.to(overlayMaterial.uniforms.uAlpha, { duration: 3, value: 0, delay: 1 })
+            // gsap.to(overlayMaterial.uniforms.uAlpha, { duration: 3, value: 0, delay: 1 })
             loadingBarElement.classList.add('ended')
-            loadingBarElement.style.transform = ''
+            loadingBarContainer.classList.add('ended')
+            // buttonGroup.style.opacity = 1
+            // buttonGroup.style.pointerEvents = 'all'
+
         })
     },
     ( itemsUrl, itemsLoaded, itemsTotal) =>
@@ -173,19 +178,101 @@ const sizes = {
  * Audio
  */
 
-const sound = new THREE.Audio(audioListener)
+//Basic one
+let sound = new THREE.Audio(audioListener)
 const audioLoader = new THREE.AudioLoader()
 audioLoader.load('./audio/berlioz - deep in it.mp3', function(buffer){
     sound.setBuffer(buffer)
     sound.setLoop(true)
     sound.setVolume(0.2)
-    window.addEventListener('click', () => {
-        //sound.play()
-    }
-    )
 })
 
-const analyser = new THREE.AudioAnalyser(sound, 256)
+// Play from file
+let fileInput = document.querySelector( '#file' );
+fileInput.addEventListener( 'change', function( event ) {
+
+	const reader = new FileReader();
+	reader.addEventListener( 'load', function ( event ) {
+
+		const buffer = event.target.result;
+
+		const context = THREE.AudioContext.getContext();
+		context.decodeAudioData( buffer, function ( audioBuffer ) {
+
+            sound.stop()
+            material.uniforms.uMusic.value = false
+            musicBtn.style.filter = 'grayscale(100%)'
+
+			sound = new THREE.Audio( audioListener );
+            sound.setBuffer(audioBuffer)
+            sound.setLoop(true)
+            sound.setVolume(0.2)
+            analyser = new THREE.AudioAnalyser(sound, 256)
+
+		} );
+
+	} );
+
+	const file = event.target.files[0];
+	reader.readAsArrayBuffer( file );
+} );
+
+
+// Play from youtube
+let youtubeBtn = document.querySelector( '#youtubeBtn' );
+let youtubeInput = document.querySelector( '#youtube' );
+youtubeBtn.addEventListener( 'click', function( event ) {
+
+    let id = youtubeInput.value.split('v=')[1]
+    loadSound(id)
+})
+
+youtubeInput.addEventListener('keyup', function(event){
+    if(event.keyCode === 13){
+        event.preventDefault()
+        youtubeBtn.click()
+    }
+})
+
+function loadSound(id) {
+    let request = new XMLHttpRequest();
+    request.open("GET", ytApiLink+id, true); 
+    request.responseType = "arraybuffer"; 
+  
+    // Handle network errors
+    request.onerror = function() {
+        console.error('Network error while loading audio.');
+    };
+
+    request.onload = function() {
+        if (request.status === 200) {
+          let data = request.response;
+          console.log(data)
+          process(data);
+        } else {
+          console.error('Failed to load audio. Status code:', request.status);
+        }
+      };
+    
+      request.send();
+}
+  
+function process(data) {
+    let source = context.createBufferSource(); // Create Sound Source
+  
+    // Decode audio data
+    context.decodeAudioData(data, function(buffer) {
+      source.buffer = buffer;
+      source.connect(context.destination);
+      source.start(0);
+    }, function(error) {
+      console.error('Error decoding audio data:', error);
+    });
+}
+
+
+
+let analyser = new THREE.AudioAnalyser(sound, 256)
 
 
 /**
