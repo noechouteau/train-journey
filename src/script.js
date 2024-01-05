@@ -42,18 +42,35 @@ const gui = new dat.GUI()
 const btnGroup = document.querySelector('#buttonGroup')
 const loadingBarContainer = document.querySelector('.loading-bar')
 const loadingBarElement = document.querySelector('.progress')
+const waitText = document.querySelector('#waitText')
+const launchText = document.querySelector('#launchText')
+const video = document.querySelector('#video')
 
 const loadingManager = new THREE.LoadingManager(
     () =>
     {
         console.log('loaded')
-        gsap.delayedCall(0.5, () =>
+        waitText.classList.add('ended')
+        gsap.delayedCall(1., () =>
         {
-            // gsap.to(overlayMaterial.uniforms.uAlpha, { duration: 3, value: 0, delay: 1 })
-            loadingBarElement.classList.add('ended')
-            loadingBarContainer.classList.add('ended')
-            // buttonGroup.style.opacity = 1
-            // buttonGroup.style.pointerEvents = 'all'
+            waitText.style.display = 'none'
+            launchText.classList.remove('ended')
+            video.style.cursor = 'pointer'
+            video.addEventListener('click', () =>
+            {
+                gsap.to(overlayMaterial.uniforms.uAlpha, { duration: 3, value: 0, delay: 1 })
+                launchText.style.opacity = '0'
+                loadingBarContainer.style.opacity = '0'
+                video.style.opacity = '0'
+                btnGroup.style.display = 'flex'
+                btnGroup.style.opacity = 1
+                btnGroup.style.pointerEvents = 'all'
+                gsap.delayedCall(1, () =>
+                {
+                    loadingBarContainer.style.display = 'none'
+                    video.style.display = 'none'
+                })
+            })
 
         })
     },
