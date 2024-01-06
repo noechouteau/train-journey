@@ -3,6 +3,11 @@
     src: url(Comicy.otf);
   }
 
+@font-face {
+    font-family: MetropolisRegular;
+    src: url(Metropolis-Regular.otf);
+}
+
 *
 {
     margin: 0;
@@ -25,7 +30,7 @@ body
 }
 
 #musicBtn, #biomeBtn{
-    width:64px;
+    width:70px;
     height:64px;
     filter: grayscale(100%);
     transition: 0.5s ease;
@@ -45,7 +50,6 @@ body
     top:10px;
     left:10px;
     gap: 10px;
-    flex-direction: column;
 }
 
 .loading-bar{
@@ -99,4 +103,63 @@ video{
 
 p{
     transition: 0.5s ease;
+}
+
+.track-info{
+    background-color: rgba(0, 0, 0, 0.31);
+    display: flex;
+    color: white;
+    flex-direction: column;
+    justify-content: space-evenly;
+    border-radius: 10px;
+    border: 1px solid white;
+    box-shadow: 0px 0px 60px 0px rgba(255, 255, 255, 0.5);
+    text-align: center;
+    align-content: center;
+
+}
+
+#youtube{
+    width: 200px;
+}
+
+h4{
+    font-family: MetropolisRegular;
+    margin: 0;
+    padding: 0;
+    font-weight: 400;
+    font-size: medium;
+    letter-spacing: 1px;
+}
+
+input{
+    width: 200px;
+    height: 30px;
+    margin: 0 5px;
+    border-radius: 5px;
+    border: 0px;
+    background-color: rgba(0, 0, 0, 0.31);
+    color: white;
+    font-family: MetropolisRegular;
+    font-size: small;
+    outline: none;
+}
+
+#youtubeBtn{
+    border-radius:50%;
+    cursor: pointer;
+    border: 0px;
+    margin-right: 5px;
+    transition: 0.25s ease;
+    box-shadow: 0px 0px 0px 0px rgba(255, 255, 255, 0.5);
+}
+
+#youtubeBtn:hover{
+    box-shadow: 0px 0px 5px 1px rgba(255, 255, 255, 1);
+    transition: 0.25s ease;
+}
+
+#youtubeBtn:active{
+    filter: brightness(0.5);
+    transition: 0.1s ease;
 }

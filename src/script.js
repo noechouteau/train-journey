@@ -14,13 +14,11 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import Stats from 'stats.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { gsap} from 'gsap'
+import { gsap} from 'gsap';
+import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 
 
-const stats = new Stats()
 const ytApiLink = "https://api-yt.le-gall.info/stream/"
-stats.showPanel(0)
-document.body.appendChild(stats.dom)
 
 const params = {
     // general scene params
@@ -37,7 +35,7 @@ let speed = 6.0
  * Base
  */
 // Debug
-const gui = new dat.GUI()
+// const gui = new dat.GUI()
 
 const btnGroup = document.querySelector('#buttonGroup')
 const loadingBarContainer = document.querySelector('.loading-bar')
@@ -62,11 +60,11 @@ const loadingManager = new THREE.LoadingManager(
                 launchText.style.opacity = '0'
                 loadingBarContainer.style.opacity = '0'
                 video.style.opacity = '0'
-                btnGroup.style.display = 'flex'
-                btnGroup.style.opacity = 1
-                btnGroup.style.pointerEvents = 'all'
                 gsap.delayedCall(1, () =>
                 {
+                    btnGroup.style.display = 'flex'
+                    btnGroup.style.opacity = 1
+                    btnGroup.style.pointerEvents = 'all'
                     loadingBarContainer.style.display = 'none'
                     video.style.display = 'none'
                 })
@@ -76,6 +74,7 @@ const loadingManager = new THREE.LoadingManager(
     },
     ( itemsUrl, itemsLoaded, itemsTotal) =>
     {
+        video.style.cursor = 'wait'
         console.log(itemsLoaded, itemsTotal)
         const progressRatio = itemsLoaded / itemsTotal
         console.log(progressRatio)
@@ -125,16 +124,16 @@ scene.add(overlay)
 
 
 scene.background = new THREE.Color(0x0d00b2)
-gui.addColor(scene, 'background').onChange(() => {
-    scene.background.set(scene.background)
-}
-)
+// gui.addColor(scene, 'background').onChange(() => {
+//     scene.background.set(scene.background)
+// }
+// )
 
 /**
  * Test mesh
  */
 // Geometry
-const geometry = new THREE.PlaneGeometry(700, 250, 1024, 1024)
+const geometry = new THREE.PlaneGeometry(700, 400, 1024, 1024)
 
 
 const spherePlaneGeometry = new THREE.PlaneGeometry(150, 150, 256, 256)
@@ -275,16 +274,23 @@ function loadSound(id) {
 }
   
 function process(data) {
-    let source = context.createBufferSource(); // Create Sound Source
-  
-    // Decode audio data
-    context.decodeAudioData(data, function(buffer) {
-      source.buffer = buffer;
-      source.connect(context.destination);
-      source.start(0);
-    }, function(error) {
-      console.error('Error decoding audio data:', error);
-    });
+    
+    const buffer = data;
+
+    const context = THREE.AudioContext.getContext();
+    context.decodeAudioData( buffer, function ( audioBuffer ) {
+
+        sound.stop()
+        material.uniforms.uMusic.value = false
+        musicBtn.style.filter = 'grayscale(100%)'
+
+        sound = new THREE.Audio( audioListener );
+        sound.setBuffer(audioBuffer)
+        sound.setLoop(true)
+        sound.setVolume(0.2)
+        analyser = new THREE.AudioAnalyser(sound, 256)
+
+    } );
 }
 
 
@@ -296,16 +302,38 @@ let analyser = new THREE.AudioAnalyser(sound, 256)
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(90, sizes.width / sizes.height, 0.1, 320)
+const camera = new THREE.PerspectiveCamera(90, sizes.width / sizes.height, 0.1, 700)
+
+
 camera.position.set(0, 5.5, 25)
 scene.add(camera)
-gui.add(camera.position, 'x').min(-10).max(10).step(0.01).name('Camera X')
-gui.add(camera.position, 'y').min(0).max(50).step(0.01).name('Camera Y')
-gui.add(camera.position, 'z').min(0).max(50).step(0.01).name('Camera Z')
+// gui.add(camera.position, 'x').min(-10).max(10).step(0.01).name('Camera X')
+// gui.add(camera.position, 'y').min(0).max(50).step(0.01).name('Camera Y')
+// gui.add(camera.position, 'z').min(0).max(50).step(0.01).name('Camera Z')
 
 // Controls
 const controls = new OrbitControls(camera, canvas)
+controls.maxPolarAngle = Math.PI/2 - 0.1;
+controls.minPolarAngle = Math.PI/2 - 0.3;
+
+controls.minAzimuthAngle = -Math.PI/2+0.9;
+controls.maxAzimuthAngle = Math.PI/2-0.9;
+
 controls.enableDamping = true
+controls.dampingFactor = 0.05
+
+controls.minDistance = 20
+controls.maxDistance = 30
+controls.enableZoom = false
+controls.enablePan = false
+
+const controlsZoom = new TrackballControls(camera, canvas)
+controlsZoom.noPan = true
+controlsZoom.noRotate = true
+controlsZoom.noZoom = false
+controlsZoom.minDistance = 10
+controlsZoom.zoomSpeed = 0.5
+
 
 /**
  * Renderer
@@ -322,10 +350,9 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.toneMappingExposure = 1.5
 renderer.outputColorSpace = THREE.SRGBColorSpace
 
-const generateStars = () => {
+const generateStars = (count, randX,randY,randZ) => {
     // Geometry
     const particlesGeometry = new THREE.BufferGeometry()
-    const count = 700
 
     const positions = new Float32Array(count * 3) // Multiply by 3 because each position is composed of 3 values (x, y, z)
 
@@ -334,15 +361,25 @@ const generateStars = () => {
 
         const i3 = i * 3
 
-        positions[i3] = (Math.random() - 0.5) * sizes.width
-        positions[i3 + 1] = (Math.random()) * 170
-        while(positions[i3 + 1] > 15 && positions[i3 + 1] < 112 && positions[i3] > -47 && positions[i3] < 47)
-        {
-            positions[i3] = (Math.random() - 0.5) * sizes.width
-            positions[i3 + 1] = (Math.random()) * 170
+        let positionX;
+        if (randX == 1) {
+            positionX = 500;
+        } else if (randX == -1) {
+            positionX = -500;
+        } else {
+            positionX = (Math.random() - 0.5) * randX;
         }
-        console.log(positions[i3] + " " + positions[i3 + 1] + "   SIZE   " + sizes.width/2)
-        positions[i3 + 2] = -239
+
+        positions[i3] = positionX;
+        positions[i3 + 1] = randY == 1 ? 0 : (Math.random()) * randY;
+        positions[i3 + 2] = randZ == 1 ? -239 : (Math.random() - 0.5) * randZ;
+
+        if (randZ == 1) {
+            while (positions[i3 + 1] > 15 && positions[i3 + 1] < 112 && positions[i3] > -47 && positions[i3] < 47) {
+                positions[i3] = (Math.random() - 0.5) * randX;
+                positions[i3 + 1] = (Math.random()) * randY;
+            }
+        }
     }
 
     particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)) // Create the Three.js BufferAttribute and specify that each information is composed of 3 values
@@ -383,10 +420,10 @@ unrealBloomPass.radius = 0.1
 unrealBloomPass.threshold = -0.1
 effectComposer.addPass(unrealBloomPass)
 
-gui.add(unrealBloomPass, 'enabled').name('Bloom')
-gui.add(unrealBloomPass, 'strength').min(-1).max(1).step(0.001).name('Bloom strength')
-gui.add(unrealBloomPass, 'radius').min(-1).max(1).step(0.001).name('Bloom radius')
-gui.add(unrealBloomPass, 'threshold').min(-1).max(1).step(0.001).name('Bloom threshold')
+// gui.add(unrealBloomPass, 'enabled').name('Bloom')
+// gui.add(unrealBloomPass, 'strength').min(-1).max(1).step(0.001).name('Bloom strength')
+// gui.add(unrealBloomPass, 'radius').min(-1).max(1).step(0.001).name('Bloom radius')
+// gui.add(unrealBloomPass, 'threshold').min(-1).max(1).step(0.001).name('Bloom threshold')
 
 let mixer = null
 
@@ -442,16 +479,19 @@ scene.add(world)
 const clock = new THREE.Clock()
 
 let particles = ""
-generateStars()
+generateStars(800,1000,450,1)
+generateStars(400,1,450,450)
+generateStars(400,-1,450,450)
+
 let previousTime = 0
 
 
 const tick = () =>
 {
-    stats.begin()
     const elapsedTime = clock.getElapsedTime()
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
+
 
     // Updtae material
     material.uniforms.uTime.value = elapsedTime
@@ -470,7 +510,11 @@ const tick = () =>
 
 
     // Update controls
+    const target = controls.target
     controls.update()
+    controlsZoom.target.set(target.x, target.y, target.z)
+    controlsZoom.update()
+
 
     let first_obj = world.children[0]
     let last_obj = world.children[world.children.length - 1]
@@ -481,11 +525,6 @@ const tick = () =>
         }
     }
 
-    let offset = {
-      x: params.followMouse ? mouseWorldSpace.x : 0,
-      y: params.followMouse ? mouseWorldSpace.y : 0,
-      z: params.followMouse ? mouseWorldSpace.z : 0,
-    }
     // the first blob has a regular circular path (x y positions are calculated using the parametric function for a circle)
     first_obj.position.set(
       first_obj.position.x ,
@@ -531,7 +570,6 @@ const tick = () =>
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
-    stats.end()
 }
 
 
@@ -676,9 +714,6 @@ window.addEventListener('resize', () =>
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-    //Update stars
-    scene.remove(particles)
-    generateStars()
 
 
     effectComposer.setSize(sizes.width, sizes.height)
@@ -702,3 +737,16 @@ function generateWorld(world){
     }
     world.position.set(0, 0, 15)
 }
+
+canvas.addEventListener('drag', function(e) {
+    canvas.style.cursor = 'grab'
+}
+);
+
+let fileInp = document.querySelector( '#file' );
+let fileName = document.querySelector( '#fileName' );
+fileInp.addEventListener( 'change', function( event ) {
+    console.log(fileInp.files[0].name)
+    fileName.innerHTML = fileInp.files[0].name
+}
+);
