@@ -217,7 +217,8 @@ fileInput.addEventListener( 'change', function( event ) {
 
             sound.stop()
             material.uniforms.uMusic.value = false
-            musicBtn.style.filter = 'grayscale(100%)'
+            playBtn.style.filter = 'grayscale(100%)'
+            playBtn.classList.remove('active')
 
 			sound = new THREE.Audio( audioListener );
             sound.setBuffer(audioBuffer)
@@ -253,7 +254,8 @@ youtubeInput.addEventListener('keyup', function(event){
 function loadSound(id) {
     let request = new XMLHttpRequest();
     request.open("GET", ytApiLink+id, true); 
-    request.responseType = "arraybuffer"; 
+    request.responseType = "arraybuffer";
+    canvas.style.cursor = 'wait'
   
     // Handle network errors
     request.onerror = function() {
@@ -264,6 +266,7 @@ function loadSound(id) {
         if (request.status === 200) {
           let data = request.response;
           console.log(data)
+          canvas.style.cursor = 'auto'
           process(data);
         } else {
           console.error('Failed to load audio. Status code:', request.status);
@@ -282,7 +285,8 @@ function process(data) {
 
         sound.stop()
         material.uniforms.uMusic.value = false
-        musicBtn.style.filter = 'grayscale(100%)'
+        playBtn.style.filter = 'grayscale(100%)'
+        playBtn.classList.remove('active')
 
         sound = new THREE.Audio( audioListener );
         sound.setBuffer(audioBuffer)
@@ -579,24 +583,44 @@ console.log(renderer.info)
 
 const musicBtn = document.querySelector('#musicBtn')
 const biomeBtn = document.querySelector('#biomeBtn')
+const playBtn = document.querySelector('.botón')
 
 musicBtn.addEventListener('click', onMusicClick)
 biomeBtn.addEventListener('click', onBiomeClick)
+playBtn.addEventListener('click', onPlayClick)
 
-//Music button
-function onMusicClick(){
-    if(material.uniforms.uMusic.value == true)
+function onPlayClick(){
+    if(material.uniforms.uMusic.value == false)
     {
-        sound.pause()
-        material.uniforms.uMusic.value = false
-        musicBtn.style.filter = 'grayscale(100%)'
+        sound.play()
+        material.uniforms.uMusic.value = true
+        playBtn.style.filter = 'grayscale(0%)'
         return
     }
     else 
     {
-        sound.play()
-        material.uniforms.uMusic.value = true
+        sound.pause()
+        material.uniforms.uMusic.value = false
+        playBtn.style.filter = 'grayscale(100%)'
+        return
+    }
+}
+
+//Music button
+function onMusicClick(){
+    let trackInfo = document.querySelector('.track-info')
+    if(trackInfo.style.top == '0px')
+    {
+        trackInfo.style.top = '-150px'
+        musicBtn.style.filter = 'grayscale(100%)'
+        playBtn.style.top = '-150px'
+        return
+    }
+    else 
+    {
+        trackInfo.style.top = '0px'
         musicBtn.style.filter = 'grayscale(0%)'
+        playBtn.style.top = '0px'
         return
     }
 }
@@ -747,6 +771,11 @@ let fileInp = document.querySelector( '#file' );
 let fileName = document.querySelector( '#fileName' );
 fileInp.addEventListener( 'change', function( event ) {
     console.log(fileInp.files[0].name)
-    fileName.innerHTML = fileInp.files[0].name
+    if(fileInp.files[0].name.length > 13){
+        fileName.innerHTML = fileInp.files[0].name.substring(0, 13) + '...' + fileInp.files[0].name.substring(fileInp.files[0].name.length - 6, fileInp.files[0].name.length)
+    }
+    else{
+        fileName.innerHTML = fileInp.files[0].name
+    }
 }
 );
