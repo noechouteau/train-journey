@@ -47,7 +47,7 @@ const video = document.querySelector('#video')
 const loadingManager = new THREE.LoadingManager(
     () =>
     {
-        console.log('loaded')
+        // console.log('loaded')
         waitText.classList.add('ended')
         gsap.delayedCall(1., () =>
         {
@@ -75,9 +75,9 @@ const loadingManager = new THREE.LoadingManager(
     ( itemsUrl, itemsLoaded, itemsTotal) =>
     {
         video.style.cursor = 'wait'
-        console.log(itemsLoaded, itemsTotal)
+        // console.log(itemsLoaded, itemsTotal)
         const progressRatio = itemsLoaded / itemsTotal
-        console.log(progressRatio)
+        // console.log(progressRatio)
         loadingBarElement.style.transform = `scaleX(${progressRatio})`
     }
 )
@@ -255,7 +255,7 @@ youtubeInput.addEventListener('keyup', function(event){
 
 function loadSound(id) {
     let request = new XMLHttpRequest();
-    if(id == undefined || id == "" ||id.length < 9){
+    if(id == undefined || id == "" ||id.length < 11){
         snackbar.innerHTML = '✖️ Please enter a Youtube link.'
         showSackbar()
         return
@@ -274,7 +274,7 @@ function loadSound(id) {
     request.onload = function() {
         if (request.status === 200) {
           let data = request.response;
-          console.log(data)
+        //   console.log(data)
           canvas.style.cursor = 'auto'
           snackbar.innerHTML = '✔️ Music loaded !'
           showSackbar()
@@ -516,11 +516,6 @@ const tick = () =>
     let analysis = analyser.getFrequencyData()
 
     material.uniforms.uFrequency.value = analysis
-    if(analysis[0]> 10)
-    {
-        console.log(analysis)
-        console.log(analyser.getAverageFrequency())
-    }
     material.uniforms.uHeight.value = height
     material.uniforms.uScale.value = scale
     material.uniforms.uSpeed.value = speed
@@ -535,7 +530,6 @@ const tick = () =>
 
     let first_obj = world.children[0]
     let last_obj = world.children[world.children.length - 1]
-    console.log(world.children.length)
     if(last_obj.position.z > 15){
         for(let i = 0; i < world.children.length; i++){
             world.children[i].position.z = 0
@@ -591,7 +585,6 @@ const tick = () =>
 
 
 tick()
-console.log(renderer.info)
 
 
 const musicBtn = document.querySelector('#musicBtn')
@@ -784,7 +777,7 @@ canvas.addEventListener('drag', function(e) {
 let fileInp = document.querySelector( '#file' );
 let fileName = document.querySelector( '#fileName' );
 fileInp.addEventListener( 'change', function( event ) {
-    console.log(fileInp.files[0].name)
+    // console.log(fileInp.files[0].name)
     if(fileInp.files[0].name.length > 13){
         fileName.innerHTML = fileInp.files[0].name.substring(0, 13) + '...' + fileInp.files[0].name.substring(fileInp.files[0].name.length - 6, fileInp.files[0].name.length)
     }
