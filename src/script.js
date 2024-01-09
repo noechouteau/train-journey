@@ -219,6 +219,8 @@ fileInput.addEventListener( 'change', function( event ) {
             material.uniforms.uMusic.value = false
             playBtn.style.filter = 'grayscale(100%)'
             playBtn.classList.remove('active')
+            snackbar.innerHTML = '✔️ Music loaded !'
+            showSackbar()
 
 			sound = new THREE.Audio( audioListener );
             sound.setBuffer(audioBuffer)
@@ -253,12 +255,19 @@ youtubeInput.addEventListener('keyup', function(event){
 
 function loadSound(id) {
     let request = new XMLHttpRequest();
+    if(id == undefined || id == "" ||id.length < 9){
+        snackbar.innerHTML = '✖️ Please enter a Youtube link.'
+        showSackbar()
+        return
+    }
     request.open("GET", ytApiLink+id, true); 
     request.responseType = "arraybuffer";
     canvas.style.cursor = 'wait'
   
     // Handle network errors
     request.onerror = function() {
+        snackbar.innerHTML = '✖️ Network error while loading audio.'
+        showSackbar()
         console.error('Network error while loading audio.');
     };
 
@@ -267,8 +276,12 @@ function loadSound(id) {
           let data = request.response;
           console.log(data)
           canvas.style.cursor = 'auto'
+          snackbar.innerHTML = '✔️ Music loaded !'
+          showSackbar()
           process(data);
         } else {
+        snackbar.innerHTML = '✖️ Music failed to load. Please use a proper Youtube link.'
+        showSackbar()
           console.error('Failed to load audio. Status code:', request.status);
         }
       };
@@ -584,6 +597,7 @@ console.log(renderer.info)
 const musicBtn = document.querySelector('#musicBtn')
 const biomeBtn = document.querySelector('#biomeBtn')
 const playBtn = document.querySelector('.botón')
+const snackbar = document.getElementById("snackbar");
 
 musicBtn.addEventListener('click', onMusicClick)
 biomeBtn.addEventListener('click', onBiomeClick)
@@ -779,3 +793,13 @@ fileInp.addEventListener( 'change', function( event ) {
     }
 }
 );
+
+function showSackbar() {
+    snackbar.className = "show";
+    setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 4800);
+  }
+
+
+function closeSnackbar(){
+    snackbar.className = snackbar.className.replace("show", "");
+}
