@@ -173,6 +173,10 @@ input{
     align-items: center;
     font-family: 'Manrope', sans-serif;
     font-size: small;
+    margin:10px;
+    width: 150px;
+    flex-direction: column;
+    gap: 10px;
 }
 
 #fileInfos label{
